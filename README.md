@@ -39,6 +39,13 @@ npx -y github:RealSid08/cursor-subagents setup --harness codex,claude-code,openc
 npx -y github:RealSid08/cursor-subagents setup --harness mcp --dry-run --json
 ```
 
+Guided terminal installer:
+
+```bash
+npx -y github:RealSid08/cursor-subagents setup --interactive
+npx -y github:RealSid08/cursor-subagents setup --interactive --dry-run
+```
+
 ## Requirements
 
 Install and authenticate Cursor Agent first:

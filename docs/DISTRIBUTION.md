@@ -22,6 +22,9 @@ The setup CLI:
 
 - detects `cursor-agent`, `codex`, `claude`, `opencode`, `pi`, `npx`, `npm`, and
   known macOS desktop apps;
+- supports a guided terminal installer with `--interactive` and a fully
+  non-interactive path with `--harness`, `--all`, `--yes`, `--dry-run`, and
+  `--json`;
 - checks Cursor CLI version and authentication status;
 - can install Cursor CLI with Cursor's official `curl https://cursor.com/install -fsS | bash` flow when selected;
 - installs Codex and Claude Code through plugin marketplaces;

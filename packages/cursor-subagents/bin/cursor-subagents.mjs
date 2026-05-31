@@ -10,7 +10,7 @@ function help() {
 
 Usage:
   cursor-subagents doctor [--json]
-  cursor-subagents setup [--harness <targets>] [--all] [--yes] [--dry-run] [--json]
+  cursor-subagents setup [--interactive] [--harness <targets>] [--all] [--yes] [--dry-run] [--json]
   cursor-subagents models [--json] [--include-models] [--filter <text>] [--limit <n>]
   cursor-subagents run --prompt <task> [--workspace <path>] [--model <id>] [--mode agent|ask|plan] [--yolo|--no-yolo]
   cursor-subagents mcp
@@ -39,7 +39,7 @@ function parseArgs(argv) {
       continue;
     }
     const name = arg.slice(2);
-    if (name === "json" || name === "include-models" || name === "yolo" || name === "no-yolo" || name === "trust" || name === "no-trust" || name === "approve-mcps" || name === "all" || name === "yes" || name === "dry-run" || name === "install-cursor" || name === "skip-cursor-install" || name === "login-cursor") {
+    if (name === "json" || name === "include-models" || name === "yolo" || name === "no-yolo" || name === "trust" || name === "no-trust" || name === "approve-mcps" || name === "all" || name === "yes" || name === "dry-run" || name === "install-cursor" || name === "skip-cursor-install" || name === "login-cursor" || name === "interactive" || name === "no-color") {
       flags[name] = true;
       continue;
     }

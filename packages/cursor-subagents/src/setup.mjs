@@ -27,7 +27,7 @@ export function setupHelp() {
   return `cursor-subagents setup
 
 Usage:
-  cursor-subagents setup [--harness <targets>] [--all] [--yes] [--dry-run] [--json]
+  cursor-subagents setup [--interactive] [--harness <targets>] [--all] [--yes] [--dry-run] [--json]
   cursor-subagents install [same options]
 
 Targets:
@@ -48,12 +48,15 @@ Options:
   --install-cursor          Install Cursor CLI if cursor-agent is missing.
   --skip-cursor-install     Never install Cursor CLI; only print next steps.
   --login-cursor            Run cursor-agent login when not authenticated.
+  --interactive             Force the guided terminal installer, even with --dry-run.
+  --no-color                Disable ANSI color in human-readable output.
   --yes                     Non-interactive yes for selected actions.
   --dry-run                 Show what would happen without changing anything.
   --json                    Emit machine-readable results.
 
 Examples:
   npx -y github:RealSid08/cursor-subagents setup
+  npx -y github:RealSid08/cursor-subagents setup --interactive --dry-run
   npx -y cursor-subagents setup --all --yes
   cursor-subagents setup --harness codex,claude-code,opencode --install-cursor
 `;
@@ -64,33 +67,45 @@ export async function runSetup(rawFlags = {}, io = {}) {
   const out = io.stdout || process.stdout;
   const err = io.stderr || process.stderr;
   const detected = await detectEnvironment();
-  const interactive = !flags.yes && !flags.json && !flags.dryRun && process.stdin.isTTY && process.stdout.isTTY;
-  const targets = await selectTargets(flags, detected, interactive);
-  const steps = [];
+  const interactive = shouldUseInteractive(flags);
+  const ui = createUi(flags, out);
+  const selection = interactive
+    ? await collectInteractiveSetup(flags, detected, ui)
+    : { targets: await selectTargets(flags, detected, false), cancelled: false };
+  const targets = selection.targets;
+  let steps = [];
+  let cancelled = selection.cancelled === true;
 
-  if (!flags.json) {
-    out.write(`cursor-subagents setup\n`);
-    out.write(`repo: ${flags.repo}\n`);
-    out.write(`selected: ${targets.join(", ") || "(none)"}\n\n`);
-    out.write(formatDetection(detected));
+  if (interactive && !cancelled) {
+    const plannedSteps = await buildSetupSteps({ ...flags, dryRun: true }, detected, targets, false);
+    out.write(formatInteractivePlan(plannedSteps, ui, flags));
+    if (flags.dryRun) {
+      steps = plannedSteps;
+    } else {
+      const proceed = await confirmPrompt(ui, "Proceed with these changes?", true);
+      if (proceed) {
+        steps = await buildSetupSteps(flags, detected, targets, false);
+      } else {
+        cancelled = true;
+        steps = plannedSteps;
+      }
+    }
   }
 
-  await ensureCursorCli(flags, detected, steps, interactive);
-
-  for (const target of targets) {
-    if (target === "codex") await installCodex(flags, detected, steps);
-    else if (target === "claude-code") await installClaudeCode(flags, detected, steps);
-    else if (target === "opencode") await installOpenCode(flags, detected, steps);
-    else if (target === "pi") await installPi(flags, detected, steps);
-    else if (target === "skills") await installSkills(flags, detected, steps);
-    else if (target === "mcp") addMcpSnippet(flags, steps);
+  if (!flags.json && !interactive) {
+    out.write(formatSummaryHeader(flags, detected, targets, ui));
   }
 
-  addCursorAuthNote(flags, detected, steps);
+  if (!interactive) {
+    steps = await buildSetupSteps(flags, detected, targets, false);
+  }
 
   const result = {
     ok: steps.every((step) => step.status !== "failed"),
+    cancelled,
     dryRun: flags.dryRun,
+    source: flags.source,
+    scope: flags.scope,
     selectedTargets: targets,
     detected,
     steps,
@@ -99,7 +114,7 @@ export async function runSetup(rawFlags = {}, io = {}) {
   if (flags.json) {
     out.write(`${JSON.stringify(result, null, 2)}\n`);
   } else {
-    out.write(formatSteps(steps));
+    out.write(formatSteps(steps, ui, { cancelled }));
   }
 
   if (!result.ok) {
@@ -111,6 +126,8 @@ export async function runSetup(rawFlags = {}, io = {}) {
 function normalizeFlags(flags) {
   const normalized = { ...flags };
   normalized.repo = normalized.repo || REPO;
+  normalized.sourceWasSet = Boolean(normalized.source);
+  normalized.scopeWasSet = Boolean(normalized.scope);
   normalized.source = normalized.source || "github";
   normalized.scope = normalized.scope || "user";
   normalized.npmPackage = normalized["npm-package"] || normalized.npmPackage || NPM_RUNTIME;
@@ -121,7 +138,13 @@ function normalizeFlags(flags) {
   normalized.installCursor = normalized["install-cursor"] === true || normalized.installCursor === true;
   normalized.skipCursorInstall = normalized["skip-cursor-install"] === true || normalized.skipCursorInstall === true;
   normalized.loginCursor = normalized["login-cursor"] === true || normalized.loginCursor === true;
+  normalized.interactive = normalized.interactive === true;
+  normalized.noColor = normalized["no-color"] === true || normalized.noColor === true;
   normalized.harnesses = parseHarnesses(normalized.harness || normalized.harnesses || normalized.target || normalized.targets);
+  if (!["github", "npm"].includes(normalized.source)) throw new Error("--source must be github or npm");
+  if (!["user", "project", "local", "global"].includes(normalized.scope)) {
+    throw new Error("--scope must be user, project, local, or global");
+  }
   return normalized;
 }
 
@@ -143,6 +166,143 @@ function parseHarnesses(value) {
     }
   }
   return targets;
+}
+
+function shouldUseInteractive(flags) {
+  if (flags.yes || flags.json) return false;
+  const tty = process.stdin.isTTY && process.stdout.isTTY;
+  if (!tty) return false;
+  return flags.interactive || !flags.dryRun && flags.harnesses.length === 0 && !flags.all;
+}
+
+function createUi(flags, out) {
+  const useColor = !flags.noColor && !process.env.NO_COLOR && out.isTTY === true;
+  const color = (code, text) => useColor ? `\x1b[${code}m${text}\x1b[0m` : text;
+  return {
+    out,
+    color,
+    dim: (text) => color("2", text),
+    bold: (text) => color("1", text),
+    green: (text) => color("32", text),
+    yellow: (text) => color("33", text),
+    red: (text) => color("31", text),
+    cyan: (text) => color("36", text),
+  };
+}
+
+async function collectInteractiveSetup(flags, detected, ui) {
+  const defaults = detectedNativeTargets(detected);
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    ui.out.write(formatInteractiveIntro(flags, detected, defaults, ui));
+
+    const targets = flags.all
+      ? [...ALL_TARGETS]
+      : flags.harnesses.length
+        ? flags.harnesses
+        : await promptInstallProfile(rl, defaults, ui);
+
+    if (!targets.length) {
+      return { targets: [], cancelled: true };
+    }
+
+    if (!flags.sourceWasSet && targets.some((target) => ["opencode", "pi", "mcp"].includes(target))) {
+      flags.source = await promptChoice(rl, ui, {
+        label: "Package source",
+        defaultValue: "github",
+        choices: [
+          ["github", "GitHub repo now (recommended before npm publication)"],
+          ["npm", "npm registry packages"],
+        ],
+      });
+    }
+
+    if (!flags.scopeWasSet && targets.some((target) => ["claude-code", "opencode"].includes(target))) {
+      flags.scope = await promptChoice(rl, ui, {
+        label: "Install scope",
+        defaultValue: "user",
+        choices: [
+          ["user", "current user / global harness config"],
+          ["project", "current project only"],
+        ],
+      });
+    }
+
+    ui.out.write(`\n${ui.bold("Selection")}\n`);
+    ui.out.write(`  targets: ${targets.join(", ")}\n`);
+    ui.out.write(`  source: ${flags.source}\n`);
+    ui.out.write(`  scope: ${flags.scope}\n`);
+    if (flags.dryRun) ui.out.write(`  mode: dry run; no changes will be made\n`);
+    ui.out.write("\n");
+
+    return { targets, cancelled: false };
+  } finally {
+    rl.close();
+  }
+}
+
+async function promptInstallProfile(rl, defaults, ui) {
+  const defaultText = defaults.join(", ") || "skills, mcp";
+  ui.out.write(`${ui.bold("Install profile")}\n`);
+  ui.out.write(`  1. Recommended  ${ui.dim(defaultText)}\n`);
+  ui.out.write(`  2. Everything   ${ui.dim(ALL_TARGETS.join(", "))}\n`);
+  ui.out.write(`  3. Custom       ${ui.dim("choose exact targets")}\n`);
+  ui.out.write(`  4. MCP only     ${ui.dim("generic fallback config")}\n`);
+  ui.out.write(`  5. Exit\n`);
+  const answer = (await rl.question("Choose [1]: ")).trim();
+  if (!answer || answer === "1") return defaults.length ? defaults : ["skills", "mcp"];
+  if (answer === "2") return [...ALL_TARGETS];
+  if (answer === "4") return ["mcp"];
+  if (answer === "5" || /^q(uit)?$/i.test(answer)) return [];
+  if (answer === "3") {
+    const custom = await rl.question("Targets (codex, claude-code, opencode, pi, skills, mcp): ");
+    return parseHarnesses(custom);
+  }
+  return parseHarnesses(answer);
+}
+
+async function promptChoice(rl, ui, { label, defaultValue, choices }) {
+  ui.out.write(`${ui.bold(label)}\n`);
+  choices.forEach(([value, description], index) => {
+    const suffix = value === defaultValue ? " default" : "";
+    ui.out.write(`  ${index + 1}. ${value.padEnd(8)} ${ui.dim(description)}${suffix ? ui.dim(` (${suffix})`) : ""}\n`);
+  });
+  const answer = (await rl.question(`Choose [${defaultValue}]: `)).trim();
+  if (!answer) return defaultValue;
+  const byNumber = choices[Number(answer) - 1]?.[0];
+  if (byNumber) return byNumber;
+  const byValue = choices.find(([value]) => value === answer.toLowerCase())?.[0];
+  if (byValue) return byValue;
+  throw new Error(`Unknown ${label.toLowerCase()}: ${answer}`);
+}
+
+async function confirmPrompt(ui, question, defaultYes) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const suffix = defaultYes ? "[Y/n]" : "[y/N]";
+    const answer = (await rl.question(`${question} ${suffix} `)).trim();
+    if (!answer) return defaultYes;
+    return /^y(es)?$/i.test(answer);
+  } finally {
+    rl.close();
+  }
+}
+
+async function buildSetupSteps(flags, detected, targets, interactive) {
+  const steps = [];
+  await ensureCursorCli(flags, detected, steps, interactive);
+
+  for (const target of targets) {
+    if (target === "codex") await installCodex(flags, detected, steps);
+    else if (target === "claude-code") await installClaudeCode(flags, detected, steps);
+    else if (target === "opencode") await installOpenCode(flags, detected, steps);
+    else if (target === "pi") await installPi(flags, detected, steps);
+    else if (target === "skills") await installSkills(flags, detected, steps);
+    else if (target === "mcp") addMcpSnippet(flags, steps);
+  }
+
+  addCursorAuthNote(flags, detected, steps);
+  return steps;
 }
 
 async function selectTargets(flags, detected, interactive) {
@@ -579,6 +739,83 @@ function desktopHint(detected, app, fallback) {
   return detected.desktopApps?.[app] ? `${app} Desktop was detected. ${fallback}` : fallback;
 }
 
+function formatInteractiveIntro(flags, detected, defaults, ui) {
+  const lines = [];
+  lines.push("");
+  lines.push(ui.bold("Cursor Subagents Setup"));
+  lines.push(ui.dim("Install native Cursor Agent subagents for your agent harnesses."));
+  lines.push("");
+  lines.push(`Repo: ${flags.repo}`);
+  lines.push(`Detected default: ${defaults.join(", ") || "skills, mcp"}`);
+  lines.push("");
+  lines.push(ui.bold("Detected environment"));
+  lines.push(...formatDetectionRows(detected, ui).map((line) => `  ${line}`));
+  lines.push("");
+  return `${lines.join("\n")}\n`;
+}
+
+function formatSummaryHeader(flags, detected, targets, ui) {
+  return [
+    ui.bold("cursor-subagents setup"),
+    `repo: ${flags.repo}`,
+    `selected: ${targets.join(", ") || "(none)"}`,
+    `source: ${flags.source}`,
+    `scope: ${flags.scope}`,
+    "",
+    "Detected:",
+    ...formatDetectionRows(detected, ui).map((line) => `  ${line}`),
+    "",
+  ].join("\n");
+}
+
+function formatDetectionRows(detected, ui) {
+  const cliRows = [
+    ["Cursor CLI", detected.cursor.installed, detected.cursor.version || "cursor-agent not found"],
+    ["Cursor auth", detected.cursor.authenticated, detected.cursor.authenticated ? "authenticated" : "login required"],
+    ["Codex CLI", detected.commands.codex, "codex"],
+    ["Claude CLI", detected.commands.claude, "claude"],
+    ["OpenCode CLI", detected.commands.opencode, "opencode"],
+    ["Pi CLI", detected.commands.pi, "pi"],
+    ["Node tools", detected.commands.npx && detected.commands.npm, "npm/npx"],
+  ];
+  const desktop = Object.entries(detected.desktopApps || {})
+    .filter(([, value]) => value)
+    .map(([name]) => name)
+    .join(", ") || "none";
+  const rows = cliRows.map(([label, ok, detail]) => {
+    const status = ok ? ui.green("OK") : ui.yellow("MISS");
+    return `${label.padEnd(12)} ${status.padEnd(ok ? 11 : 13)} ${detail}`;
+  });
+  rows.push(`${"Desktop apps".padEnd(12)} ${ui.cyan("INFO").padEnd(13)} ${desktop}`);
+  return rows;
+}
+
+function formatInteractivePlan(steps, ui, flags) {
+  const lines = [];
+  lines.push(ui.bold("Install plan"));
+  lines.push(flags.dryRun ? ui.yellow("Dry run: no changes will be made.") : "Review before changes are applied.");
+  for (const step of steps) {
+    lines.push(`  ${formatStatus(step.status, ui).padEnd(12)} ${step.target.padEnd(12)} ${step.message || step.description || step.commandLine || ""}`);
+    if (step.commandLine) lines.push(`               ${ui.dim(step.commandLine)}`);
+    if (step.path) lines.push(`               ${ui.dim(step.path)}`);
+    if (step.config) {
+      for (const line of JSON.stringify(step.config, null, 2).split("\n")) {
+        lines.push(`               ${ui.dim(line)}`);
+      }
+    }
+  }
+  lines.push("");
+  return `${lines.join("\n")}\n`;
+}
+
+function formatStatus(status, ui) {
+  if (status === "ok") return ui.green("OK");
+  if (status === "planned") return ui.cyan("PLAN");
+  if (status === "manual") return ui.yellow("TODO");
+  if (status === "failed") return ui.red("FAIL");
+  return String(status || "INFO").toUpperCase();
+}
+
 function formatDetection(detected) {
   const commands = Object.entries(detected.commands)
     .filter(([, ok]) => ok)
@@ -598,13 +835,18 @@ function formatDetection(detected) {
   ].join("\n");
 }
 
-function formatSteps(steps) {
-  const lines = ["Setup results:"];
+function formatSteps(steps, ui = createUi({ noColor: true }, process.stdout), options = {}) {
+  const lines = [options.cancelled ? "Setup cancelled:" : "Setup results:"];
   for (const step of steps) {
-    lines.push(`- [${step.status}] ${step.target}: ${step.message || step.description || step.commandLine || ""}`);
-    if (step.commandLine) lines.push(`  command: ${step.commandLine}`);
-    if (step.path) lines.push(`  path: ${step.path}`);
-    if (step.config) lines.push(`  config: ${JSON.stringify(step.config, null, 2)}`);
+    lines.push(`- [${formatStatus(step.status, ui)}] ${step.target}: ${step.message || step.description || step.commandLine || ""}`);
+    if (step.commandLine) lines.push(`  command: ${ui.dim(step.commandLine)}`);
+    if (step.path) lines.push(`  path: ${ui.dim(step.path)}`);
+    if (step.config) {
+      lines.push("  config:");
+      for (const line of JSON.stringify(step.config, null, 2).split("\n")) {
+        lines.push(`    ${ui.dim(line)}`);
+      }
+    }
     if (step.stderr && step.status === "failed") lines.push(`  stderr: ${step.stderr}`);
   }
   return `${lines.join("\n")}\n`;
