@@ -17,10 +17,18 @@
     "mcp"
   ],
   "license": "MIT",
+  "homepage": "https://github.com/RealSid08/cursor-subagents#readme",
+  "bugs": {
+    "url": "https://github.com/RealSid08/cursor-subagents/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RealSid08/cursor-subagents.git",
     "directory": "packages/opencode-cursor-subagents"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=18"

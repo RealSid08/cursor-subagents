@@ -10,6 +10,12 @@ const packageRoot = join(root, "packages", "cursor-subagents");
 const opencodePackageRoot = join(root, "packages", "opencode-cursor-subagents");
 const piPackageRoot = join(root, "packages", "pi-cursor-subagents");
 const rootPackageJsonPath = join(root, "package.json");
+const ciWorkflowPath = join(root, ".github", "workflows", "ci.yml");
+const publishWorkflowPath = join(root, ".github", "workflows", "publish.yml");
+const publishScriptPath = join(root, "scripts", "publish-npm.mjs");
+const publishCheckScriptPath = join(root, "scripts", "check-publish-ready.mjs");
+const changelogPath = join(root, "CHANGELOG.md");
+const securityPath = join(root, "SECURITY.md");
 const rootSkillPath = join(root, "skills", "cursor-subagents", "SKILL.md");
 const licensePath = join(root, "LICENSE");
 const manifestPath = join(pluginRoot, ".codex-plugin", "plugin.json");
@@ -53,6 +59,12 @@ function requireFile(path) {
 }
 
 requireFile(rootPackageJsonPath);
+requireFile(ciWorkflowPath);
+requireFile(publishWorkflowPath);
+requireFile(publishScriptPath);
+requireFile(publishCheckScriptPath);
+requireFile(changelogPath);
+requireFile(securityPath);
 requireFile(manifestPath);
 requireFile(marketplacePath);
 requireFile(rootSkillPath);
@@ -112,6 +124,9 @@ if (rootPackageJson) {
   if (!rootPackageJson.pi?.extensions?.includes("packages/pi-cursor-subagents/extensions")) {
     failures.push("root pi.extensions must include packages/pi-cursor-subagents/extensions");
   }
+  for (const script of ["publish:check", "publish:npm", "publish:npm:dry-run"]) {
+    if (!rootPackageJson.scripts?.[script]) failures.push(`root package scripts must include ${script}`);
+  }
 }
 
 if (packageJson) {
@@ -125,6 +140,7 @@ if (packageJson) {
   if (packageJson.exports?.["./opencode-local-plugin"] !== "./src/opencode-local-plugin.mjs") {
     failures.push("runtime package must export ./opencode-local-plugin for setup fallback copies");
   }
+  if (packageJson.publishConfig?.access !== "public") failures.push("runtime package publishConfig.access must be public");
 }
 
 if (opencodePackageJson) {
@@ -140,6 +156,7 @@ if (opencodePackageJson) {
   if (!opencodePackageJson.dependencies?.["@opencode-ai/plugin"]) {
     failures.push("OpenCode package must depend on @opencode-ai/plugin");
   }
+  if (opencodePackageJson.publishConfig?.access !== "public") failures.push("OpenCode package publishConfig.access must be public");
 }
 
 if (piPackageJson) {
@@ -152,6 +169,7 @@ if (piPackageJson) {
   if (!piPackageJson.peerDependencies?.["typebox"] || !piPackageJson.peerDependencies?.["@earendil-works/pi-ai"]) {
     failures.push("Pi package must peer depend on Pi-provided typebox and @earendil-works/pi-ai");
   }
+  if (piPackageJson.publishConfig?.access !== "public") failures.push("Pi package publishConfig.access must be public");
 }
 
 if (marketplace) {
@@ -231,7 +249,7 @@ const syntax = spawnSync("node", ["--check", serverPath], { encoding: "utf8" });
 if (syntax.status !== 0) {
   failures.push(`MCP server syntax check failed:\n${syntax.stderr || syntax.stdout}`);
 }
-for (const path of [claudeServerPath, packageBinPath, packageMcpPath, packageSetupPath, packageOpenCodeLocalPluginPath, opencodePackageIndexPath, opencodeToolPath, piPackageExtensionPath]) {
+for (const path of [claudeServerPath, packageBinPath, packageMcpPath, packageSetupPath, packageOpenCodeLocalPluginPath, opencodePackageIndexPath, opencodeToolPath, piPackageExtensionPath, publishScriptPath, publishCheckScriptPath]) {
   const check = spawnSync("node", ["--check", path], { encoding: "utf8" });
   if (check.status !== 0) failures.push(`${path} syntax check failed:\n${check.stderr || check.stdout}`);
 }

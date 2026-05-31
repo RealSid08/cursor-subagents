@@ -188,10 +188,24 @@ npx -y cursor-subagents run --workspace "$PWD" --model composer-2.5 --yolo --pro
 
 ```bash
 npm run validate
+npm run publish:check
 npx skills add . --list
 ```
 
 See `docs/DISTRIBUTION.md` for release steps.
+
+## Publish
+
+Local first publish:
+
+```bash
+npm login --auth-type=web
+npm run publish:npm:dry-run
+npm run publish:npm
+```
+
+Ongoing releases should use `.github/workflows/publish.yml` with npm trusted
+publishing configured for the three packages.
 
 ## References
 

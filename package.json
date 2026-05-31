@@ -19,6 +19,10 @@
     "type": "git",
     "url": "https://github.com/RealSid08/cursor-subagents.git"
   },
+  "homepage": "https://github.com/RealSid08/cursor-subagents#readme",
+  "bugs": {
+    "url": "https://github.com/RealSid08/cursor-subagents/issues"
+  },
   "license": "MIT",
   "workspaces": [
     "packages/*"
@@ -33,6 +37,10 @@
   },
   "scripts": {
     "validate": "node scripts/validate-distribution.mjs",
+    "test": "npm run validate",
+    "publish:check": "node scripts/check-publish-ready.mjs",
+    "publish:npm": "node scripts/publish-npm.mjs",
+    "publish:npm:dry-run": "node scripts/publish-npm.mjs --dry-run",
     "runtime:help": "node packages/cursor-subagents/bin/cursor-subagents.mjs --help",
     "runtime:doctor": "node packages/cursor-subagents/bin/cursor-subagents.mjs doctor --json",
     "runtime:models": "node packages/cursor-subagents/bin/cursor-subagents.mjs models --json",

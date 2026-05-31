@@ -49,6 +49,7 @@ The setup CLI:
    ```bash
    npx -y . setup --dry-run --all --json
    npm run validate
+   npm run publish:check
    npx skills add . --list
    claude plugin validate .claude-plugin/marketplace.json
    claude plugin validate plugins/claude-code/cursor-subagents
@@ -68,12 +69,25 @@ The setup CLI:
 4. Publish npm packages when logged into npm:
 
    ```bash
-   npm publish packages/cursor-subagents --access public
-   npm publish packages/opencode-cursor-subagents --access public
-   npm publish packages/pi-cursor-subagents --access public
+   npm run publish:npm:dry-run
+   npm run publish:npm
    ```
 
-5. Test npm-native installs:
+5. Configure npm trusted publishing for each package:
+
+   - Package: `cursor-subagents`
+   - Package: `opencode-cursor-subagents`
+   - Package: `pi-cursor-subagents`
+   - Publisher: GitHub Actions
+   - Organization/user: `RealSid08`
+   - Repository: `cursor-subagents`
+   - Workflow filename: `publish.yml`
+   - Allowed action: `npm publish`
+
+   After this, releases should happen through `.github/workflows/publish.yml`
+   on a `v*.*.*` tag or manual `workflow_dispatch`; no npm token is required.
+
+6. Test npm-native installs:
 
    ```bash
    npx -y cursor-subagents doctor --json
@@ -165,6 +179,31 @@ Update these together:
 - `plugins/cursor-subagents/.codex-plugin/plugin.json`
 - `plugins/claude-code/cursor-subagents/.claude-plugin/plugin.json`
 - `.claude-plugin/marketplace.json`
+- `CHANGELOG.md`
+
+## Publishing Pipeline
+
+The repo has two GitHub Actions workflows:
+
+- `.github/workflows/ci.yml`: validates manifests, packages, and skill listing on
+  `main` and pull requests.
+- `.github/workflows/publish.yml`: validates and publishes the three npm
+  packages in dependency order.
+
+The publish workflow is built for npm trusted publishing. Official npm guidance
+requires npm CLI 11.5.1 or newer, Node 22.14.0 or newer, `id-token: write`, and a
+GitHub-hosted runner; the workflow uses Node 24 and `actions/setup-node` with the
+npm registry configured.
+
+Manual fallback:
+
+```bash
+npm login --auth-type=web
+npm run publish:npm:dry-run
+npm run publish:npm
+```
+
+Use `npm run publish:npm -- --otp <code>` if npm asks for a one-time password.
 
 ## Development Fallbacks
 
