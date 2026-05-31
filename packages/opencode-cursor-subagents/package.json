@@ -19,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RealSid08/cursor-subagents.git",
+    "url": "git+https://github.com/RealSid08/cursor-subagents.git",
     "directory": "packages/opencode-cursor-subagents"
   },
   "engines": {

@@ -4,7 +4,7 @@
 
 **Goal:** Make `cursor-subagents` installable as a harness-agnostic Agent Skill and as native plugins/adapters for Codex, Claude Code, OpenCode, Pi, and compatible MCP-based harnesses.
 
-**Architecture:** Keep one canonical skill at `skills/cursor-subagents/SKILL.md` and one shared runtime package at `packages/cursor-subagents`. Harness-specific plugin folders copy or wrap that behavior in the native structure each harness expects. ACP remains the live-session layer, and write-capable/yolo behavior remains the default for delegated coding work.
+**Architecture:** Keep one canonical skill at `skills/cursor-subagents/SKILL.md` and one shared runtime package at `packages/cursor-subagents`. Harness-specific plugin folders copy or wrap that behavior in the native structure each harness expects. ACP remains the live-session layer, and write-capable/yolo behavior remains the default for delegated coding work. Distribution is centered on `cursor-subagents setup`, which detects CLIs/desktop apps and installs native integrations where possible.
 
 **Tech Stack:** Node.js ESM, Cursor Agent CLI, ACP, MCP stdio, Agent Skills `SKILL.md`, Codex plugin manifests, Claude Code plugin marketplaces, OpenCode npm plugins/custom tools, Pi packages.
 
@@ -43,6 +43,8 @@ Expected: `Skill is valid!`
 - Create: `packages/cursor-subagents/bin/cursor-subagents.mjs`
 - Create: `packages/cursor-subagents/src/cursor-cli.mjs`
 - Create: `packages/cursor-subagents/src/mcp-server.mjs`
+- Create: `packages/cursor-subagents/src/setup.mjs`
+- Create: `packages/cursor-subagents/src/opencode-local-plugin.mjs`
 
 - [x] **Step 1: Add package metadata**
 
@@ -50,7 +52,7 @@ Expose a bin named `cursor-subagents` and publishable package metadata.
 
 - [x] **Step 2: Add CLI commands**
 
-Implement `help`, `doctor`, `models`, `run`, and `mcp`. Keep all commands non-interactive and provide copy-pasteable examples.
+Implement `help`, `setup`, `doctor`, `models`, `run`, and `mcp`. Keep runtime commands non-interactive where needed and provide copy-pasteable examples.
 
 - [x] **Step 3: Validate**
 
@@ -92,6 +94,7 @@ Run Codex plugin validation and, when available, `claude plugin validate plugins
 - Create: `packages/opencode-cursor-subagents/package.json`
 - Create: `packages/opencode-cursor-subagents/index.js`
 - Create: `packages/pi-cursor-subagents/package.json`
+- Create: `packages/pi-cursor-subagents/extensions/cursor-subagents.js`
 - Create: `packages/pi-cursor-subagents/skills/cursor-subagents/SKILL.md`
 - Create: `adapters/opencode/opencode.jsonc`
 - Create: `adapters/opencode/tools/cursor-run-once.js`
@@ -104,7 +107,30 @@ Provide a native OpenCode npm plugin as the primary install path. Keep MCP confi
 
 - [x] **Step 2: Pi**
 
-Expose the canonical skill through root GitHub install metadata and a publishable `pi-cursor-subagents` npm package.
+Expose the canonical skill and native Pi extension through root GitHub install metadata and a publishable `pi-cursor-subagents` npm package.
+
+### Task 4.5: Desktop-Aware Installer
+
+**Files:**
+- Modify: `package.json`
+- Modify: `packages/cursor-subagents/bin/cursor-subagents.mjs`
+- Create: `packages/cursor-subagents/src/setup.mjs`
+
+- [x] **Step 1: Add GitHub npx entrypoint**
+
+Expose the root `cursor-subagents` bin so `npx -y github:RealSid08/cursor-subagents setup` works before npm publication.
+
+- [x] **Step 2: Add interactive setup**
+
+Detect Codex, Claude Code, OpenCode, Pi, Cursor Agent, `npx`, `npm`, and known macOS desktop apps. Let users select harnesses and support `--all`, `--harness`, `--yes`, `--dry-run`, and `--json`.
+
+- [x] **Step 3: Add Cursor CLI guidance**
+
+Check Cursor Agent install/auth status, optionally install Cursor CLI from Cursor's official install script, and always surface `cursor-agent login` when auth is missing.
+
+- [x] **Step 4: Add OpenCode GitHub fallback**
+
+Before npm publication, install a local OpenCode plugin in the native plugin directory that exposes the same tools and launches the MCP runtime with `npx -y github:RealSid08/cursor-subagents mcp`.
 
 ### Task 5: Docs And Validation
 
@@ -116,7 +142,7 @@ Expose the canonical skill through root GitHub install metadata and a publishabl
 
 - [x] **Step 1: Document installs**
 
-Lead with native install paths: Codex marketplace, Claude Code marketplace, OpenCode npm plugin, Pi package, and Vercel Skills.
+Lead with the setup CLI, then native install paths: Codex marketplace, Claude Code marketplace/Desktop browser, OpenCode npm plugin/config fallback, Pi package/extension, Vercel Skills, and generic MCP fallback.
 
 - [x] **Step 2: Extend validation**
 

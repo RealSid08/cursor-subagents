@@ -4,6 +4,17 @@
   "private": true,
   "description": "Portable Cursor Agent subagents for Codex, Claude Code, OpenCode, Pi, and Agent Skills harnesses.",
   "type": "module",
+  "keywords": [
+    "pi-package",
+    "agent-skills",
+    "cursor",
+    "subagents",
+    "mcp",
+    "acp"
+  ],
+  "bin": {
+    "cursor-subagents": "./packages/cursor-subagents/bin/cursor-subagents.mjs"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/RealSid08/cursor-subagents.git"
@@ -13,6 +24,9 @@
     "packages/*"
   ],
   "pi": {
+    "extensions": [
+      "packages/pi-cursor-subagents/extensions"
+    ],
     "skills": [
       "skills/cursor-subagents"
     ]

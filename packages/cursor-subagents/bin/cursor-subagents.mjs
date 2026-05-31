@@ -10,6 +10,7 @@ function help() {
 
 Usage:
   cursor-subagents doctor [--json]
+  cursor-subagents setup [--harness <targets>] [--all] [--yes] [--dry-run] [--json]
   cursor-subagents models [--json] [--include-models] [--filter <text>] [--limit <n>]
   cursor-subagents run --prompt <task> [--workspace <path>] [--model <id>] [--mode agent|ask|plan] [--yolo|--no-yolo]
   cursor-subagents mcp
@@ -19,6 +20,8 @@ Defaults:
   run: --yolo --trust --mode agent
 
 Examples:
+  cursor-subagents setup
+  cursor-subagents setup --all --yes
   cursor-subagents doctor --json
   cursor-subagents models --json
   cursor-subagents run --workspace "$PWD" --model ${DEFAULT_MODEL} --yolo --prompt "Review and fix the failing test"
@@ -36,13 +39,19 @@ function parseArgs(argv) {
       continue;
     }
     const name = arg.slice(2);
-    if (name === "json" || name === "include-models" || name === "yolo" || name === "no-yolo" || name === "trust" || name === "no-trust" || name === "approve-mcps") {
+    if (name === "json" || name === "include-models" || name === "yolo" || name === "no-yolo" || name === "trust" || name === "no-trust" || name === "approve-mcps" || name === "all" || name === "yes" || name === "dry-run" || name === "install-cursor" || name === "skip-cursor-install" || name === "login-cursor") {
       flags[name] = true;
       continue;
     }
     const value = argv[i + 1];
     if (value === undefined || value.startsWith("--")) throw new Error(`Missing value for --${name}`);
-    flags[name] = value;
+    if (flags[name] === undefined) {
+      flags[name] = value;
+    } else if (Array.isArray(flags[name])) {
+      flags[name].push(value);
+    } else {
+      flags[name] = [flags[name], value];
+    }
     i += 1;
   }
   return flags;
@@ -56,6 +65,18 @@ async function main() {
   const [command = "help", ...rest] = process.argv.slice(2);
   if (command === "--help" || command === "-h" || command === "help") {
     process.stdout.write(help());
+    return;
+  }
+
+  if (command === "setup" || command === "install") {
+    const { runSetup, setupHelp } = await import("../src/setup.mjs");
+    if (rest.includes("--help") || rest.includes("-h")) {
+      process.stdout.write(setupHelp());
+      return;
+    }
+    const flags = parseArgs(rest);
+    const result = await runSetup(flags);
+    process.exitCode = result.ok ? 0 : 1;
     return;
   }
 

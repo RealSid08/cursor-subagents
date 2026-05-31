@@ -1,12 +1,13 @@
 # Tool Reference
 
 All tools are served by the `cursor-subagents` MCP server. The OpenCode npm
-plugin exposes the same names as native OpenCode custom tools and proxies them
-to the shared MCP runtime internally.
+plugin and Pi package expose the same names as native harness tools and proxy
+them to the shared MCP runtime internally.
 
 The same behavior is available from the runtime CLI:
 
 ```bash
+cursor-subagents setup --dry-run --json
 cursor-subagents doctor --json
 cursor-subagents models --json
 cursor-subagents run --workspace "$PWD" --model composer-2.5 --yolo --prompt "<task>"

@@ -7,10 +7,11 @@
     ".": "./src/cursor-cli.mjs",
     "./runtime": "./src/cursor-cli.mjs",
     "./mcp": "./src/mcp-server.mjs",
+    "./opencode-local-plugin": "./src/opencode-local-plugin.mjs",
     "./package.json": "./package.json"
   },
   "bin": {
-    "cursor-subagents": "./bin/cursor-subagents.mjs"
+    "cursor-subagents": "bin/cursor-subagents.mjs"
   },
   "files": [
     "bin/",
@@ -27,7 +28,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RealSid08/cursor-subagents.git",
+    "url": "git+https://github.com/RealSid08/cursor-subagents.git",
     "directory": "packages/cursor-subagents"
   },
   "engines": {

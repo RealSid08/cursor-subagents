@@ -9,6 +9,7 @@ const claudePluginRoot = join(root, "plugins", "claude-code", "cursor-subagents"
 const packageRoot = join(root, "packages", "cursor-subagents");
 const opencodePackageRoot = join(root, "packages", "opencode-cursor-subagents");
 const piPackageRoot = join(root, "packages", "pi-cursor-subagents");
+const rootPackageJsonPath = join(root, "package.json");
 const rootSkillPath = join(root, "skills", "cursor-subagents", "SKILL.md");
 const licensePath = join(root, "LICENSE");
 const manifestPath = join(pluginRoot, ".codex-plugin", "plugin.json");
@@ -24,10 +25,13 @@ const claudeSkillPath = join(claudePluginRoot, "skills", "cursor-subagents", "SK
 const packageJsonPath = join(packageRoot, "package.json");
 const packageBinPath = join(packageRoot, "bin", "cursor-subagents.mjs");
 const packageMcpPath = join(packageRoot, "src", "mcp-server.mjs");
+const packageSetupPath = join(packageRoot, "src", "setup.mjs");
+const packageOpenCodeLocalPluginPath = join(packageRoot, "src", "opencode-local-plugin.mjs");
 const opencodePackageJsonPath = join(opencodePackageRoot, "package.json");
 const opencodePackageIndexPath = join(opencodePackageRoot, "index.js");
 const piPackageJsonPath = join(piPackageRoot, "package.json");
 const piPackageSkillPath = join(piPackageRoot, "skills", "cursor-subagents", "SKILL.md");
+const piPackageExtensionPath = join(piPackageRoot, "extensions", "cursor-subagents.js");
 const opencodePath = join(root, "adapters", "opencode", "opencode.jsonc");
 const opencodeToolPath = join(root, "adapters", "opencode", "tools", "cursor-run-once.js");
 const piAdapterPath = join(root, "adapters", "pi", "package.json");
@@ -48,6 +52,7 @@ function requireFile(path) {
   if (!existsSync(path)) failures.push(`Missing required file: ${path}`);
 }
 
+requireFile(rootPackageJsonPath);
 requireFile(manifestPath);
 requireFile(marketplacePath);
 requireFile(rootSkillPath);
@@ -63,14 +68,18 @@ requireFile(claudeSkillPath);
 requireFile(packageJsonPath);
 requireFile(packageBinPath);
 requireFile(packageMcpPath);
+requireFile(packageSetupPath);
+requireFile(packageOpenCodeLocalPluginPath);
 requireFile(opencodePackageJsonPath);
 requireFile(opencodePackageIndexPath);
 requireFile(piPackageJsonPath);
 requireFile(piPackageSkillPath);
+requireFile(piPackageExtensionPath);
 requireFile(opencodePath);
 requireFile(opencodeToolPath);
 requireFile(piAdapterPath);
 
+const rootPackageJson = existsSync(rootPackageJsonPath) ? readJson(rootPackageJsonPath) : null;
 const manifest = existsSync(manifestPath) ? readJson(manifestPath) : null;
 const marketplace = existsSync(marketplacePath) ? readJson(marketplacePath) : null;
 const mcp = existsSync(mcpPath) ? readJson(mcpPath) : null;
@@ -94,13 +103,27 @@ if (manifest) {
   }
 }
 
+if (rootPackageJson) {
+  if (rootPackageJson.bin?.["cursor-subagents"] !== "./packages/cursor-subagents/bin/cursor-subagents.mjs") {
+    failures.push("root package must expose cursor-subagents bin for npx github installs");
+  }
+  if (!Array.isArray(rootPackageJson.pi?.skills)) failures.push("root package must declare pi.skills");
+  if (!Array.isArray(rootPackageJson.pi?.extensions)) failures.push("root package must declare pi.extensions");
+  if (!rootPackageJson.pi?.extensions?.includes("packages/pi-cursor-subagents/extensions")) {
+    failures.push("root pi.extensions must include packages/pi-cursor-subagents/extensions");
+  }
+}
+
 if (packageJson) {
   if (packageJson.name !== "cursor-subagents") failures.push("runtime package name must be cursor-subagents");
-  if (packageJson.bin?.["cursor-subagents"] !== "./bin/cursor-subagents.mjs") {
+  if (!["./bin/cursor-subagents.mjs", "bin/cursor-subagents.mjs"].includes(packageJson.bin?.["cursor-subagents"])) {
     failures.push("runtime package must expose cursor-subagents bin");
   }
   if (packageJson.exports?.["./package.json"] !== "./package.json") {
     failures.push("runtime package must export ./package.json for native harness plugin resolution");
+  }
+  if (packageJson.exports?.["./opencode-local-plugin"] !== "./src/opencode-local-plugin.mjs") {
+    failures.push("runtime package must export ./opencode-local-plugin for setup fallback copies");
   }
 }
 
@@ -122,8 +145,12 @@ if (opencodePackageJson) {
 if (piPackageJson) {
   if (piPackageJson.name !== "pi-cursor-subagents") failures.push("Pi package name must be pi-cursor-subagents");
   if (!Array.isArray(piPackageJson.pi?.skills)) failures.push("Pi package must declare pi.skills");
+  if (!Array.isArray(piPackageJson.pi?.extensions)) failures.push("Pi package must declare pi.extensions");
   if (!piPackageJson.dependencies?.["cursor-subagents"]) {
     failures.push("Pi package must depend on cursor-subagents");
+  }
+  if (!piPackageJson.peerDependencies?.["typebox"] || !piPackageJson.peerDependencies?.["@earendil-works/pi-ai"]) {
+    failures.push("Pi package must peer depend on Pi-provided typebox and @earendil-works/pi-ai");
   }
 }
 
@@ -204,7 +231,7 @@ const syntax = spawnSync("node", ["--check", serverPath], { encoding: "utf8" });
 if (syntax.status !== 0) {
   failures.push(`MCP server syntax check failed:\n${syntax.stderr || syntax.stdout}`);
 }
-for (const path of [claudeServerPath, packageBinPath, packageMcpPath, opencodePackageIndexPath, opencodeToolPath]) {
+for (const path of [claudeServerPath, packageBinPath, packageMcpPath, packageSetupPath, packageOpenCodeLocalPluginPath, opencodePackageIndexPath, opencodeToolPath, piPackageExtensionPath]) {
   const check = spawnSync("node", ["--check", path], { encoding: "utf8" });
   if (check.status !== 0) failures.push(`${path} syntax check failed:\n${check.stderr || check.stdout}`);
 }
@@ -212,6 +239,25 @@ for (const path of [claudeServerPath, packageBinPath, packageMcpPath, opencodePa
 const help = spawnSync("node", [packageBinPath, "--help"], { encoding: "utf8" });
 if (help.status !== 0 || !help.stdout.includes("cursor-subagents run")) {
   failures.push("runtime CLI help did not complete or missed run command");
+}
+
+const setupHelp = spawnSync("node", [packageBinPath, "setup", "--help"], { encoding: "utf8" });
+if (setupHelp.status !== 0 || !setupHelp.stdout.includes("cursor-subagents setup")) {
+  failures.push("runtime setup help did not complete");
+}
+
+const setupDryRun = spawnSync("node", [packageBinPath, "setup", "--dry-run", "--harness", "codex,claude-code,opencode,pi,skills,mcp", "--json"], { encoding: "utf8" });
+if (setupDryRun.status !== 0) {
+  failures.push(`runtime setup dry-run failed:\n${setupDryRun.stderr || setupDryRun.stdout}`);
+} else {
+  try {
+    const dryRun = JSON.parse(setupDryRun.stdout);
+    if (!dryRun.dryRun || !dryRun.steps?.some((step) => step.target === "pi")) {
+      failures.push("runtime setup dry-run JSON missed expected targets");
+    }
+  } catch (error) {
+    failures.push(`runtime setup dry-run emitted invalid JSON: ${error.message}`);
+  }
 }
 
 const cursorBinary = process.env.CURSOR_AGENT_BIN || "cursor-agent";
