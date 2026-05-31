@@ -1,0 +1,13 @@
+interface:
+  display_name: "Cursor Subagents"
+  short_description: "Delegate Codex work to Cursor CLI agents"
+  default_prompt: "Use $cursor-subagents to delegate a scoped coding task to Cursor."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "cursor-subagents"
+      description: "Local MCP wrapper for Cursor CLI live ACP sessions and headless runs."
+
+policy:
+  allow_implicit_invocation: true

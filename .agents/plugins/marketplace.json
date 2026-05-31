@@ -1,0 +1,20 @@
+{
+  "name": "cursor-subagents-local",
+  "interface": {
+    "displayName": "Cursor Subagents Local"
+  },
+  "plugins": [
+    {
+      "name": "cursor-subagents",
+      "source": {
+        "source": "local",
+        "path": "./plugins/cursor-subagents"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
