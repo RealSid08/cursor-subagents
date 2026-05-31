@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "cursor-subagents": {
+      "command": "node",
+      "args": [
+        "./scripts/cursor-subagents-mcp.mjs"
+      ],
+      "cwd": "."
+    }
+  }
+}

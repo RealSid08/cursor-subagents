@@ -1,84 +1,129 @@
-# Cursor Subagents for Codex
+# Cursor Subagents
 
-Cursor Subagents is a Codex plugin that exposes the Cursor Agent CLI as Codex-managed subagents.
-It gives Codex a small MCP tool surface for one-shot Cursor runs, persistent live ACP sessions,
-follow-up prompts, model listing, and explicit Cursor model selection.
+Use Cursor Agent as a real delegated subagent from Codex, Claude Code, OpenCode,
+Pi, and any Agent Skills or MCP-capable harness.
 
-The default model is `composer-2.5`.
+Defaults:
 
-## What Is Included
-
-- A repo-local Codex marketplace at `.agents/plugins/marketplace.json`.
-- The `cursor-subagents` plugin under `plugins/cursor-subagents`.
-- A dependency-free MCP server at `plugins/cursor-subagents/scripts/cursor-subagents-mcp.mjs`.
-- A Codex skill that tells Codex when and how to use Cursor as a subagent.
-- Distribution and tool-reference docs under `docs/`.
+- Live subagents use Cursor ACP.
+- One-shot runs are yolo/write-capable by default.
+- The default model is `composer-2.5`.
+- The current workspace is reused; Cursor worktrees are never created unless requested.
+- If the parent harness is already inside a git worktree, that worktree path is used.
 
 ## Requirements
 
-- Codex with plugin support enabled.
-- Node.js available on `PATH`.
-- Cursor Agent CLI available as `cursor-agent`.
-- Cursor Agent authentication, usually via `cursor-agent login`.
-
-You can override the Cursor binary path with:
+Install and authenticate Cursor Agent first:
 
 ```bash
-CURSOR_AGENT_BIN=/absolute/path/to/cursor-agent
+cursor-agent login
+cursor-agent --version
 ```
 
-## Install From A Local Clone
+Override the binary with `CURSOR_AGENT_BIN=/path/to/cursor-agent` if needed.
 
-From the repository root:
+## Install
+
+### Codex
 
 ```bash
-codex plugin marketplace add "$PWD"
+codex plugin marketplace add RealSid08/cursor-subagents
 ```
 
-Then enable `cursor-subagents` from the Codex app plugin UI.
+Then enable **Cursor Subagents** in the Codex plugin UI and start a fresh thread.
 
-For headless Codex environments where the plugin UI is not available, enable plugins and this
-marketplace plugin in `~/.codex/config.toml`:
+### Claude Code
 
-```toml
-[features]
-plugins = true
-
-[plugins."cursor-subagents@cursor-subagents-local"]
-enabled = true
+```bash
+claude plugin marketplace add RealSid08/cursor-subagents
+claude plugin install cursor-subagents@cursor-subagents
 ```
 
-Start a new Codex thread after enabling the plugin so its skills and MCP tools are loaded.
-
-## Quick Smoke Test
-
-Ask Codex:
+The same flow works inside Claude Code with:
 
 ```text
-Use [$cursor-subagents](plugin://cursor-subagents@cursor-subagents-local) and call cursor_list_models.
+/plugin marketplace add RealSid08/cursor-subagents
+/plugin install cursor-subagents@cursor-subagents
 ```
 
-Expected result: `defaultModel` is `composer-2.5`.
+### OpenCode
 
-## Validate The Distribution
+After the npm packages are published:
 
 ```bash
-node scripts/validate-distribution.mjs
+opencode plugin opencode-cursor-subagents --global
 ```
 
-For full Codex plugin schema validation during development, also run:
+That installs the native OpenCode plugin and exposes the same `cursor_*` tools.
+
+### Pi
+
+From GitHub now:
 
 ```bash
-PYTHONPATH=/tmp/codex-pyyaml-validator python3 /Users/sid/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/cursor-subagents
+pi install github:RealSid08/cursor-subagents
 ```
 
-## Usage Notes
+After npm publication:
 
-- `cursor_run_once` is the most reliable one-shot path and defaults to Cursor print mode with
-  `stream-json`, `--trust`, and `--yolo`.
-- Pass `yolo: false` and `mode: "ask"` or `mode: "plan"` for read-only review tasks.
-- Live ACP sessions persist while the MCP server process stays alive.
-- No Cursor worktree is created by default. Pass the current Codex workspace as `cwd`.
-- Use `model` on the MCP call to choose a Cursor model directly.
+```bash
+pi install npm:pi-cursor-subagents
+```
 
-See `docs/TOOL_REFERENCE.md` for the tool surface and `docs/DISTRIBUTION.md` for release prep.
+### Universal Skill
+
+For any supported Agent Skills harness:
+
+```bash
+npx skills add RealSid08/cursor-subagents --skill cursor-subagents -g -y
+```
+
+To target specific harnesses:
+
+```bash
+npx skills add RealSid08/cursor-subagents --skill cursor-subagents -a claude-code -a codex -a opencode -a pi -g -y
+```
+
+## Tools
+
+Native plugin installs expose:
+
+- `cursor_spawn_task`: start a live ACP subagent, send the first prompt, and keep it alive.
+- `cursor_start_agent`: start a persistent ACP session.
+- `cursor_prompt_agent`: send follow-up prompts to a live session.
+- `cursor_run_once`: run one headless yolo Cursor task.
+- `cursor_list_models`: list Cursor models and the default.
+- `cursor_list_agents`: inspect live sessions.
+- `cursor_stop_agent`: stop a live session.
+
+Use `mode: "ask"` or `mode: "plan"` and `yolo: false` for read-only delegation.
+
+## Runtime CLI
+
+The shared runtime is also usable directly:
+
+```bash
+npx -y cursor-subagents doctor --json
+npx -y cursor-subagents models --json
+npx -y cursor-subagents run --workspace "$PWD" --model composer-2.5 --yolo --prompt "Review and fix the failing test"
+```
+
+## Repository Layout
+
+- `skills/cursor-subagents/`: canonical harness-agnostic skill.
+- `packages/cursor-subagents/`: shared runtime CLI and MCP server.
+- `packages/opencode-cursor-subagents/`: native OpenCode npm plugin.
+- `packages/pi-cursor-subagents/`: Pi package.
+- `plugins/cursor-subagents/`: Codex plugin marketplace package.
+- `plugins/claude-code/cursor-subagents/`: Claude Code plugin marketplace package.
+- `.agents/plugins/marketplace.json`: Codex marketplace.
+- `.claude-plugin/marketplace.json`: Claude Code marketplace.
+
+## Validate
+
+```bash
+npm run validate
+npx skills add . --list
+```
+
+See `docs/DISTRIBUTION.md` for release steps.

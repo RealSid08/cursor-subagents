@@ -1,7 +1,7 @@
 {
-  "name": "cursor-subagents-local",
+  "name": "cursor-subagents",
   "interface": {
-    "displayName": "Cursor Subagents Local"
+    "displayName": "Cursor Subagents"
   },
   "plugins": [
     {

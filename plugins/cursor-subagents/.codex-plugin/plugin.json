@@ -1,10 +1,14 @@
 {
   "name": "cursor-subagents",
   "version": "0.1.0",
-  "description": "Use Cursor CLI as Codex-managed subagents with live ACP sessions, headless runs, and direct model selection.",
+  "description": "Use Cursor Agent as Codex-managed subagents with live ACP sessions, yolo runs, and direct model selection.",
   "author": {
-    "name": "Local developer"
+    "name": "RealSid08",
+    "url": "https://github.com/RealSid08"
   },
+  "homepage": "https://github.com/RealSid08/cursor-subagents",
+  "repository": "https://github.com/RealSid08/cursor-subagents",
+  "license": "MIT",
   "keywords": [
     "cursor",
     "subagents",
@@ -15,9 +19,9 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Cursor Subagents",
-    "shortDescription": "Delegate Codex work to Cursor CLI agents.",
-    "longDescription": "Cursor Subagents exposes Cursor CLI to Codex as a small set of MCP tools for live ACP subagent sessions, reliable headless --yolo tasks, model listing, direct model selection, and session cleanup.",
-    "developerName": "Local developer",
+    "shortDescription": "Delegate Codex work to Cursor Agent.",
+    "longDescription": "Cursor Subagents exposes Cursor Agent to Codex as MCP tools for live ACP subagent sessions, reliable headless yolo tasks, model listing, direct model selection, and session cleanup.",
+    "developerName": "RealSid08",
     "category": "Developer Tools",
     "capabilities": [
       "Interactive",
@@ -27,7 +31,8 @@
       "Use Cursor to review this diff as a subagent.",
       "Spawn Cursor to implement this scoped fix.",
       "Ask Cursor to inspect this repo read-only."
-    ]
+    ],
+    "websiteURL": "https://github.com/RealSid08/cursor-subagents"
   },
   "mcpServers": "./.mcp.json"
 }

@@ -1,6 +1,17 @@
 # Tool Reference
 
-All tools are served by the `cursor-subagents` MCP server.
+All tools are served by the `cursor-subagents` MCP server. The OpenCode npm
+plugin exposes the same names as native OpenCode custom tools and proxies them
+to the shared MCP runtime internally.
+
+The same behavior is available from the runtime CLI:
+
+```bash
+cursor-subagents doctor --json
+cursor-subagents models --json
+cursor-subagents run --workspace "$PWD" --model composer-2.5 --yolo --prompt "<task>"
+cursor-subagents mcp
+```
 
 ## `cursor_run_once`
 
@@ -38,6 +49,12 @@ Output includes:
 - `gitStatus`
 - `newGitStatusLines`
 - `stderr`
+
+CLI equivalent:
+
+```bash
+cursor-subagents run --json --workspace "$PWD" --model composer-2.5 --yolo --prompt "<task>"
+```
 
 ## `cursor_start_agent`
 
@@ -98,3 +115,10 @@ Optional inputs:
 - `includeModels`: set to `true` to include model objects.
 - `filter`: case-insensitive filter applied to model JSON.
 - `limit`: max number of returned model objects when `includeModels` is true.
+
+CLI equivalent:
+
+```bash
+cursor-subagents models --json
+cursor-subagents models --json --include-models --filter composer --limit 20
+```

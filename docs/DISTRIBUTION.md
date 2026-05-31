@@ -1,76 +1,103 @@
 # Distribution Guide
 
-This repository is laid out as a repo-local Codex marketplace. The intended distribution path is:
+The distribution rule is: use each harness's native install surface first, and
+keep copy-paste scripts as development-only fallbacks.
 
-1. Share or publish this repository.
-2. The user clones it locally.
-3. The user runs `codex plugin marketplace add <repo-root>`.
-4. The user enables `cursor-subagents` in Codex and starts a new thread.
+## Install Matrix
 
-## Release Checklist
+| Harness | Native install | Package in this repo | Status |
+| --- | --- | --- | --- |
+| Codex | `codex plugin marketplace add RealSid08/cursor-subagents` | `.agents/plugins/marketplace.json`, `plugins/cursor-subagents/` | Works from a public GitHub repo after push |
+| Claude Code | `claude plugin marketplace add RealSid08/cursor-subagents` then `claude plugin install cursor-subagents@cursor-subagents` | `.claude-plugin/marketplace.json`, `plugins/claude-code/cursor-subagents/` | Works from a public GitHub repo after push |
+| OpenCode | `opencode plugin opencode-cursor-subagents --global` | `packages/opencode-cursor-subagents/` | Works after npm publication |
+| Pi | `pi install github:RealSid08/cursor-subagents` or `pi install npm:pi-cursor-subagents` | root `pi.skills`, `packages/pi-cursor-subagents/` | GitHub works after push; npm works after npm publication |
+| Agent Skills harnesses | `npx skills add RealSid08/cursor-subagents --skill cursor-subagents -g -y` | `skills/cursor-subagents/` | Works from a public GitHub repo after push |
+| MCP-only harnesses | configure `npx -y cursor-subagents mcp` | `packages/cursor-subagents/` | Works after npm publication |
 
-Run these before sharing a build:
+## Release Order
 
-```bash
-node scripts/validate-distribution.mjs
-node --check plugins/cursor-subagents/scripts/cursor-subagents-mcp.mjs
-PYTHONPATH=/tmp/codex-pyyaml-validator python3 /Users/sid/.codex/skills/.system/skill-creator/scripts/quick_validate.py plugins/cursor-subagents/skills/cursor-subagents
-PYTHONPATH=/tmp/codex-pyyaml-validator python3 /Users/sid/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/cursor-subagents
-```
+1. Validate locally:
 
-Then test from a fresh Codex thread:
+   ```bash
+   npm run validate
+   npx skills add . --list
+   claude plugin validate .claude-plugin/marketplace.json
+   claude plugin validate plugins/claude-code/cursor-subagents
+   ```
 
-```text
-Use [$cursor-subagents](plugin://cursor-subagents@cursor-subagents-local).
-Call cursor_list_models with no arguments and report defaultModel.
-```
+2. Push the GitHub repo and make it public.
 
-Expected default model: `composer-2.5`.
+3. Test GitHub-native installs:
+
+   ```bash
+   codex plugin marketplace add RealSid08/cursor-subagents
+   claude plugin marketplace add RealSid08/cursor-subagents
+   pi install github:RealSid08/cursor-subagents
+   npx skills add RealSid08/cursor-subagents --skill cursor-subagents --list
+   ```
+
+4. Publish npm packages when logged into npm:
+
+   ```bash
+   npm publish packages/cursor-subagents --access public
+   npm publish packages/opencode-cursor-subagents --access public
+   npm publish packages/pi-cursor-subagents --access public
+   ```
+
+5. Test npm-native installs:
+
+   ```bash
+   npx -y cursor-subagents doctor --json
+   opencode plugin opencode-cursor-subagents --global
+   pi install npm:pi-cursor-subagents
+   ```
+
+## Harness Notes
+
+### Codex
+
+Codex plugins use a repository marketplace file plus plugin folders. The Codex
+plugin bundles the canonical skill and an MCP server, so users only add the
+marketplace and enable the plugin.
+
+### Claude Code
+
+Claude Code marketplaces are GitHub-friendly. The plugin root contains only the
+Claude manifest under `.claude-plugin/`; skills and MCP config live at the plugin
+root so cache installs can resolve paths correctly.
+
+### OpenCode
+
+OpenCode's native plugin path is npm. `packages/opencode-cursor-subagents` is a
+real OpenCode plugin, not a config snippet: it starts the shared
+`cursor-subagents` MCP runtime internally and exposes the `cursor_*` tools as
+OpenCode custom tools.
+
+### Pi
+
+Pi can install packages from GitHub or npm. The repository root declares the
+canonical skill for GitHub installs, and `packages/pi-cursor-subagents` is the
+publishable npm package.
+
+### Universal Skill
+
+Vercel's `skills` CLI is the broadest fallback. It should remain harness-agnostic
+and should not contain Codex-, Claude-, or OpenCode-only setup prose beyond the
+tool preference order.
 
 ## Versioning
 
-Use normal semantic versions in `plugins/cursor-subagents/.codex-plugin/plugin.json`.
+Update these together:
 
-For local iteration where Codex needs to refresh its cached plugin copy, use the plugin-creator
-cachebuster helper rather than hand-editing marketplace files:
+- `package.json`
+- `packages/cursor-subagents/package.json`
+- `packages/opencode-cursor-subagents/package.json`
+- `packages/pi-cursor-subagents/package.json`
+- `plugins/cursor-subagents/.codex-plugin/plugin.json`
+- `plugins/claude-code/cursor-subagents/.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
 
-```bash
-python3 /Users/sid/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py plugins/cursor-subagents
-```
+## Development Fallbacks
 
-After a cachebuster update, reinstall or re-enable the plugin through the Codex app and start a new
-thread.
-
-## Marketplace Shape
-
-The marketplace file is `.agents/plugins/marketplace.json`.
-
-It intentionally points to:
-
-```json
-"path": "./plugins/cursor-subagents"
-```
-
-That keeps the repository self-contained: the marketplace root and plugin source travel together.
-
-## Compatibility Notes
-
-- The plugin expects the Cursor CLI command to be `cursor-agent`, or `CURSOR_AGENT_BIN` to point to
-  an equivalent executable.
-- `cursor_run_once` defaults to a write-capable `--yolo` run for coding tasks. Use `yolo: false`
-  for read-only review or planning.
-- Live ACP sessions are process-persistent. They are not a durable session database after the MCP
-  server restarts.
-- This plugin does not create Cursor worktrees by default.
-- The Codex CLI currently exposes marketplace management commands. In environments without a CLI
-  plugin-install command, enable the plugin from the Codex app UI or with the documented config
-  stanza in `README.md`.
-
-## Before Publishing Publicly
-
-Decide and fill in:
-
-- Repository URL in `plugin.json`.
-- Homepage or documentation URL in `plugin.json`.
-- License file and `license` field.
-- Publisher name and contact metadata.
+The files under `adapters/` are examples for manual or pre-npm testing only.
+They should not be the primary install path in user-facing docs.

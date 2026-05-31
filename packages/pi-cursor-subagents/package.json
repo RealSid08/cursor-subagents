@@ -1,0 +1,31 @@
+{
+  "name": "pi-cursor-subagents",
+  "version": "0.1.0",
+  "description": "Pi package for Cursor Agent subagents through the Agent Skills standard.",
+  "type": "module",
+  "files": [
+    "skills/",
+    "README.md"
+  ],
+  "keywords": [
+    "pi-package",
+    "agent-skills",
+    "cursor",
+    "subagents",
+    "acp"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RealSid08/cursor-subagents.git",
+    "directory": "packages/pi-cursor-subagents"
+  },
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
+  },
+  "dependencies": {
+    "cursor-subagents": "^0.1.0"
+  }
+}

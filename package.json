@@ -1,0 +1,27 @@
+{
+  "name": "cursor-subagents-repo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable Cursor Agent subagents for Codex, Claude Code, OpenCode, Pi, and Agent Skills harnesses.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RealSid08/cursor-subagents.git"
+  },
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "pi": {
+    "skills": [
+      "skills/cursor-subagents"
+    ]
+  },
+  "scripts": {
+    "validate": "node scripts/validate-distribution.mjs",
+    "runtime:help": "node packages/cursor-subagents/bin/cursor-subagents.mjs --help",
+    "runtime:doctor": "node packages/cursor-subagents/bin/cursor-subagents.mjs doctor --json",
+    "runtime:models": "node packages/cursor-subagents/bin/cursor-subagents.mjs models --json",
+    "pack:dry-run": "npm pack ./packages/cursor-subagents --dry-run && npm pack ./packages/opencode-cursor-subagents --dry-run && npm pack ./packages/pi-cursor-subagents --dry-run"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "cursor-subagents",
+  "owner": {
+    "name": "RealSid08",
+    "email": "opensource@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Cursor Agent subagents for Claude Code with MCP tools, ACP live sessions, yolo runs, and model selection."
+  },
+  "plugins": [
+    {
+      "name": "cursor-subagents",
+      "source": "./plugins/claude-code/cursor-subagents",
+      "description": "Delegate Claude Code work to Cursor Agent subagents.",
+      "version": "0.1.0",
+      "author": {
+        "name": "RealSid08"
+      },
+      "category": "development",
+      "homepage": "https://github.com/RealSid08/cursor-subagents"
+    }
+  ]
+}
