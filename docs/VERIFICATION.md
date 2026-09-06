@@ -74,6 +74,12 @@ project included the skill, its PowerShell reference, and its UI metadata.
 Codex CLI accepted the repository marketplace and installed the plugin with
 `codex plugin add cursor-subagents@cursor-subagents`.
 
+Both installers were then exercised against the published GitHub repository.
+All three installed skill files matched the canonical files byte-for-byte.
+Codex reported the plugin installed and enabled from the Git marketplace source.
+[Windows and Linux CI passed](https://github.com/RealSid08/cursor-subagents/actions/runs/34023240543)
+for the rewrite commit.
+
 CI runs structural checks and skills discovery on Linux and Windows without
 calling Cursor. Live Cursor execution on macOS, Linux, and WSL is not verified
 by these checks. Cursor quota exhaustion, explicit deny rules, forced
