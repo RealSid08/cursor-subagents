@@ -1,9 +1,7 @@
-name: CI
+name: Validate skill and plugin
 
 on:
   push:
-    branches:
-      - main
   pull_request:
 
 permissions:
@@ -11,13 +9,23 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      DISABLE_TELEMETRY: '1'
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: "24"
-          package-manager-cache: false
-      - run: npm run validate
-      - run: npm run publish:check
-      - run: npx skills add . --list
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate bundle
+        run: python scripts/validate.py
+      - name: Verify skills CLI discovery
+        run: npx --yes skills@1.5.23 add . --list
+      - name: Check whitespace
+        run: git show --format= --check HEAD

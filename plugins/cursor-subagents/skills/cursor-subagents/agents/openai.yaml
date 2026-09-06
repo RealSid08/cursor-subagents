@@ -1,4 +1,4 @@
 interface:
   display_name: "Cursor Subagents"
-  short_description: "Delegate work to Cursor Agent subagents."
-  default_prompt: "Use $cursor-subagents to delegate this scoped task to Cursor Agent."
+  short_description: "Delegate coding tasks to Cursor CLI from Codex"
+  default_prompt: "Use $cursor-subagents to delegate a bounded task to Cursor CLI and verify its results."
