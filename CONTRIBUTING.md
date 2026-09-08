@@ -6,7 +6,7 @@ protocol bridges, automatic retries, and provider abstractions are outside scope
 
 The canonical skill is
 `plugins/cursor-subagents/skills/cursor-subagents/SKILL.md`. Put Windows-specific
-detail in its PowerShell reference. Update user documentation when behavior or
+detail in its PowerShell reference and macOS/POSIX setup in its POSIX reference. Update user documentation when behavior or
 installation changes. Preserve the MIT license and existing attribution.
 
 ## Checks
@@ -15,6 +15,7 @@ Python 3.10+ runs the bundle validator using only its standard library:
 
 ```sh
 python scripts/validate.py
+python scripts/smoke_examples.py
 git diff --check
 ```
 

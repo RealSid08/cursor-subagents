@@ -70,7 +70,9 @@ agent status
 agent models
 ```
 
-The official installer supports macOS, Linux, WSL, and native Windows PowerShell.
+The official installer supports macOS (including Apple Silicon), Linux, WSL,
+and native Windows. Use Bash/zsh on Mac or PowerShell 7.3+ on Windows.
+The skill checks user-local CLI paths when a desktop app has a stale PATH.
 Some installations also expose `cursor-agent`; the skill supports that command
 name. Verify that `cursor-grok-4.6-high` is in your account's model list.
 
@@ -100,7 +102,9 @@ Codex writes a self-contained review or implementation prompt,
 captures the result and session ID, and checks the work. Cursor has no access to
 the parent conversation unless that context is included in its prompt.
 
-For direct invocation, Bash examples are in the
+For direct invocation, start with the
+[macOS/POSIX setup](plugins/cursor-subagents/skills/cursor-subagents/references/macos-posix.md).
+Bash/zsh launch examples are in the
 [skill](plugins/cursor-subagents/skills/cursor-subagents/SKILL.md), and native
 Windows examples are in its
 [PowerShell reference](plugins/cursor-subagents/skills/cursor-subagents/references/powershell.md).
@@ -129,8 +133,8 @@ setup commands and `cursor_*` tools no longer apply. Remove old installations
 through the tool you used to install them before switching; this repository
 does not delete other installed packages or modify user configuration on its own.
 
-Verified on native Windows with Cursor CLI `2026.09.02-c22c1a3`:
-model availability and direct CLI execution. See [verification notes](docs/VERIFICATION.md)
+Cross-platform shell examples are exercised in CI on macOS, Windows, and Linux.
+Live Cursor execution and its platform limits are recorded below. See [verification notes](docs/VERIFICATION.md)
 for the complete checks and platform limits.
 
 ## Contributing

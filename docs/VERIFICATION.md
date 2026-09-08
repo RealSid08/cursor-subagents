@@ -1,6 +1,24 @@
 # Verification
 
-## Environment
+## macOS compatibility update (2.1.0)
+
+Checked 2026-09-08 on Apple Silicon macOS with Cursor CLI
+`2026.09.02-c22c1a3` and the account-listed `cursor-grok-4.6-high`. A live review
+identified the subtraction bug without editing the fixture. An exact-session
+follow-up changed only the addition expression and ran the test; the parent
+independently ran `node sum.test.mjs` with exit code zero and confirmed the same
+session ID. The workspace path contained spaces.
+
+`scripts/smoke_examples.py` executes the published shell blocks against a fake
+CLI: Bash and zsh on macOS, Bash on Linux, and PowerShell on Windows. It checks
+workspace and model arguments, full-access flags, stdin completion, JSON/Unicode
+output, spaced paths, and exact-session resume. Windows additionally exercises
+UTF-8 task files and background job collection. The fake Windows CLI is a
+PowerShell script, so this test does not establish native `.cmd` quoting behavior;
+the launch instructions use task files to avoid sending complex task text through
+those wrappers. These tests require no Cursor account.
+
+## Earlier native Windows verification
 
 Checked 2026-09-06 on native Windows with PowerShell 7, Cursor CLI
 `2026.09.02-c22c1a3`, Codex CLI `0.153.2`, and skills CLI `1.5.23`.
@@ -81,6 +99,6 @@ Codex reported the plugin installed and enabled from the Git marketplace source.
 for the rewrite commit.
 
 CI runs structural checks and skills discovery on Linux and Windows without
-calling Cursor. Live Cursor execution on macOS, Linux, and WSL is not verified
-by these checks. Cursor quota exhaustion, explicit deny rules, forced
+calling Cursor. Live macOS execution is recorded above; live Linux and WSL execution is not
+verified by these checks. Cursor quota exhaustion, explicit deny rules, forced
 cancellation, and concurrent write integration require separate behavioral tests.

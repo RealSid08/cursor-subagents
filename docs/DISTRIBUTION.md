@@ -10,6 +10,7 @@ plugins/cursor-subagents/
     SKILL.md
     agents/openai.yaml
     references/powershell.md
+    references/macos-posix.md
 ```
 
 The marketplace resolves `./plugins/cursor-subagents` from the repository root.
@@ -58,7 +59,7 @@ npx skills add /absolute/path/to/cursor-subagents --skill cursor-subagents --age
 
 For the published repository, replace the path with `RealSid08/cursor-subagents`.
 Inspect `.agents/skills/cursor-subagents/` in that disposable project and confirm
-the skill, PowerShell reference, and UI metadata are present.
+the skill, both platform references, and UI metadata are present.
 
 The [skills.sh directory](https://skills.sh/docs) derives rankings from CLI
 installation telemetry. A valid public repository and working install command
@@ -68,7 +69,8 @@ Developers can set `DISABLE_TELEMETRY=1` for local/CI checks.
 
 ## Release checks
 
-1. Run `python scripts/validate.py` and the skills CLI discovery check.
+1. Run `python scripts/validate.py`, `python scripts/smoke_examples.py`, and the
+   skills CLI discovery check.
 2. Install the plugin and skill from disposable/local sources; inspect their
    installed content. Run the scenarios in [VERIFICATION.md](VERIFICATION.md)
    when changing launch instructions or supported Cursor behavior.

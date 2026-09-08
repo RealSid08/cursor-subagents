@@ -11,7 +11,7 @@ jobs:
   validate:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     env:
       DISABLE_TELEMETRY: '1'
@@ -25,6 +25,8 @@ jobs:
           node-version: '22'
       - name: Validate bundle
         run: python scripts/validate.py
+      - name: Exercise shell examples without Cursor credentials
+        run: python scripts/smoke_examples.py
       - name: Verify skills CLI discovery
         run: npx --yes skills@1.5.23 add . --list
       - name: Check whitespace
