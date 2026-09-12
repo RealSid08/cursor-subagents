@@ -99,7 +99,9 @@ one reviews the API, the other updates the CLI tests. Review both results.
 ```
 
 Codex writes a self-contained review or implementation prompt,
-captures the result and session ID, and checks the work. Cursor has no access to
+captures the result and session ID, and reviews the diff and verification evidence.
+It reuses successful preflight checks within a task and runs independent checks
+when the evidence or risk calls for them. Cursor has no access to
 the parent conversation unless that context is included in its prompt.
 
 For direct invocation, start with the

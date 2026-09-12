@@ -1,6 +1,6 @@
 ---
 name: cursor-subagents
-description: Delegate self-contained coding tasks to Cursor CLI from Codex with YOLO and full local access. Use for implementation, code review, a second opinion, or independent verification, including parallel tasks in separate worktrees. Defaults to Grok 4.6 high without fast mode.
+description: Delegate bounded coding or review tasks to Cursor CLI when Cursor delegation or an independent Cursor check is wanted.
 license: MIT
 ---
 
@@ -13,7 +13,9 @@ does not receive the parent chat. No server or orchestration package is needed.
 ## Preflight
 
 Requires a shell, authenticated Cursor CLI, and access to the selected model.
-Git is needed for worktree isolation. Select instructions by the executing shell,
+Git is needed for worktree isolation. Reuse successful CLI, login, and model checks
+within the current task unless the environment changes or a run fails.
+Select instructions by the executing shell,
 not just the host OS: macOS Bash/zsh uses
 [references/macos-posix.md](references/macos-posix.md); native Windows PowerShell
 uses [references/powershell.md](references/powershell.md). In WSL use the POSIX
@@ -121,9 +123,11 @@ Missing/invalid JSON is a failed or interrupted run, not a successful empty answ
 Use `--output-format stream-json` instead when live tool events are necessary;
 that is JSON Lines, so do not parse the whole file as one JSON object.
 
-Review the actual diff, including untracked files, and independently run relevant
-checks before reporting success. A successful process does not prove the task was
-completed correctly. Collect evidence before removing temporary logs.
+Review the actual diff, including untracked files, and the child's verification
+evidence before reporting success. Run independent checks where that evidence
+is missing, inconclusive, or insufficient for the change's risk; complete required
+repository checks. A successful process alone does not prove task completion.
+Collect evidence before removing temporary logs.
 
 ## Follow up
 

@@ -1,5 +1,20 @@
 # Verification
 
+## Instruction tuning (2.1.1)
+
+The skill description now selects bounded Cursor delegation more precisely.
+Successful CLI, login, and model preflight checks can be reused within a task
+unless the environment changes or a run fails. Parent verification focuses on
+the actual diff, child evidence, unresolved uncertainty, and change risk while
+retaining required repository checks.
+
+Validated on 2026-09-12 with the bundle validator, Codex skill/plugin validators,
+and Bash/zsh example smoke checks. CLI launch commands, model choice, permissions,
+result parsing, and platform references are unchanged. These checks establish
+bundle validity and shell compatibility; they do not measure model selection
+accuracy or prove improved delegation behavior. No new live Cursor model run was
+used for this instruction-only patch.
+
 ## macOS compatibility update (2.1.0)
 
 Checked 2026-09-08 on Apple Silicon macOS with Cursor CLI
